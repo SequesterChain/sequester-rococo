@@ -25,6 +25,7 @@ use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface, RelayC
 use cumulus_relay_chain_rpc_interface::{create_client_and_start_worker, RelayChainRpcInterface};
 
 // Substrate Imports
+use sc_client_api::ExecutorProvider;
 use sc_executor::NativeElseWasmExecutor;
 use sc_network::NetworkService;
 use sc_network_common::service::NetworkBlock;
@@ -289,7 +290,7 @@ where
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = params.transaction_pool.clone();
 	let import_queue = cumulus_client_service::SharedImportQueue::new(params.import_queue);
-	let (network, system_rpc_tx, tx_handler_controller, start_network) =
+	let (network, system_rpc_tx, start_network) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &parachain_config,
 			client: client.clone(),
@@ -301,6 +302,15 @@ where
 			})),
 			warp_sync: None,
 		})?;
+
+	if parachain_config.offchain_worker.enabled {
+		sc_service::build_offchain_workers(
+			&parachain_config,
+			task_manager.spawn_handle(),
+			client.clone(),
+			network.clone(),
+		);
+	}
 
 	let rpc_builder = {
 		let client = client.clone();
@@ -327,7 +337,6 @@ where
 		backend: backend.clone(),
 		network: network.clone(),
 		system_rpc_tx,
-		tx_handler_controller,
 		telemetry: telemetry.as_mut(),
 	})?;
 
@@ -424,21 +433,23 @@ pub fn parachain_build_import_queue(
 		_,
 		_,
 		_,
+		_,
 	>(cumulus_client_consensus_aura::ImportQueueParams {
 		block_import: client.clone(),
 		client: client.clone(),
 		create_inherent_data_providers: move |_, _| async move {
-			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+			let time = sp_timestamp::InherentDataProvider::from_system_time();
 
 			let slot =
 				sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-					*timestamp,
+					*time,
 					slot_duration,
 				);
 
-			Ok((slot, timestamp))
+			Ok((time, slot))
 		},
 		registry: config.prometheus_registry(),
+		can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
 		spawner: &task_manager.spawn_essential_handle(),
 		telemetry,
 	})
@@ -495,11 +506,11 @@ pub async fn start_parachain_node(
 								&validation_data,
 								id,
 							).await;
-							let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+							let time = sp_timestamp::InherentDataProvider::from_system_time();
 
 							let slot =
 						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-							*timestamp,
+							*time,
 							slot_duration,
 						);
 
@@ -508,7 +519,7 @@ pub async fn start_parachain_node(
 									"Failed to create parachain inherent",
 								)
 							})?;
-							Ok((slot, timestamp, parachain_inherent))
+							Ok((time, slot, parachain_inherent))
 						}
 					},
 					block_import: client.clone(),
