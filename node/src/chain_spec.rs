@@ -4,7 +4,18 @@ use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::{
+	traits::{IdentifyAccount, Verify},
+	AccountId32,
+};
+use std::str::FromStr;
+
+// note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
+// 12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a
+pub fn sudo_account_sequester_test() -> AccountId {
+	return AccountId32::from_str(&"5CVYHZuTbwtagGot7P4oyEUeV5VJ3gvLYYchqXYF2spRLrsB".to_string())
+		.unwrap()
+}
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec =
@@ -218,8 +229,6 @@ fn testnet_genesis(
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
 		treasury: Default::default(),
-		sudo: parachain_template_runtime::SudoConfig {
-			key: Some(get_account_id_from_seed::<sr25519::Public>("Alice")),
-		},
+		sudo: parachain_template_runtime::SudoConfig { key: Some(sudo_account_sequester_test()) },
 	}
 }
