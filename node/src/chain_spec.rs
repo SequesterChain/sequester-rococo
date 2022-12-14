@@ -13,7 +13,7 @@ use std::str::FromStr;
 // note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
 // 12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a
 pub fn sudo_account_sequester_test() -> AccountId {
-	return AccountId32::from_str(&"5CVYHZuTbwtagGot7P4oyEUeV5VJ3gvLYYchqXYF2spRLrsB".to_string())
+	return AccountId32::from_str(&"5E2JBYi8igU5Ef9QdXhcGtaJkU6B5YKbp7h9ULJbinqndPQZ".to_string())
 		.unwrap()
 }
 
@@ -122,7 +122,7 @@ pub fn development_config() -> ChainSpec {
 		None,
 		Extensions {
 			relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-			para_id: 1000,
+			para_id: 1001,
 		},
 	)
 }
@@ -153,20 +153,7 @@ pub fn local_testnet_config() -> ChainSpec {
 						get_collator_keys_from_seed("Bob"),
 					),
 				],
-				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					get_account_id_from_seed::<sr25519::Public>("Dave"),
-					get_account_id_from_seed::<sr25519::Public>("Eve"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-				],
+				vec![sudo_account_sequester_test()],
 				1000.into(),
 			)
 		},
@@ -182,8 +169,59 @@ pub fn local_testnet_config() -> ChainSpec {
 		Some(properties),
 		// Extensions
 		Extensions {
-			relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-			para_id: 1000,
+			relay_chain: "rococo".into(), // You MUST set this to the correct network!
+			para_id: 1001,                //TODO: update
+		},
+	)
+}
+
+pub fn production_config() -> ChainSpec {
+	// Give your base currency a unit name and decimal places
+	let mut properties = sc_chain_spec::Properties::new();
+	properties.insert("tokenSymbol".into(), "ROC".into());
+	properties.insert("tokenDecimals".into(), 12.into());
+
+	// This is omitted in statemint chain_spec
+	// https://github.com/paritytech/statemint/blob/master/node/src/chain_spec.rs
+	// properties.insert("ss58Format".into(), 42.into());
+
+	ChainSpec::from_genesis(
+		// Name
+		"Sequester Rococo",
+		// ID
+		"sequester_rococo",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				// initial collators.
+				vec![
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						get_collator_keys_from_seed("Alice"),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						get_collator_keys_from_seed("Bob"),
+					),
+				],
+				vec![sudo_account_sequester_test()],
+				4816.into(),
+			)
+		},
+		// Bootnodes
+		Vec::new(),
+		// Telemetry
+		None,
+		// Protocol ID
+		Some("template-local"),
+		// Fork ID
+		None,
+		// Properties
+		Some(properties),
+		// Extensions
+		Extensions {
+			relay_chain: "rococo".into(), // You MUST set this to the correct network!
+			para_id: 4816,
 		},
 	)
 }
