@@ -13,6 +13,9 @@
 # The cache for docker container dependency
 /.cargo/config
 
+# config files
+para-4816-*
+
 .DS_Store
 .idea
 .vscode

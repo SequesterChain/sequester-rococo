@@ -1,9 +1,10 @@
 use cumulus_primitives_core::ParaId;
+use hex_literal::hex;
 use parachain_template_runtime::{AccountId, AuraId, Signature, EXISTENTIAL_DEPOSIT};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
-use sp_core::{sr25519, Pair, Public};
+use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	AccountId32,
@@ -196,14 +197,19 @@ pub fn production_config() -> ChainSpec {
 		move || {
 			testnet_genesis(
 				// initial collators.
+				// 5E4zWKeJiGs5zkV1KtmEnaf2G7nRvXZJrSRuNhFGqMGDqZ1P
 				vec![
 					(
-						get_account_id_from_seed::<sr25519::Public>("Alice"),
-						get_collator_keys_from_seed("Alice"),
+						hex!("58b0835abd6923d489c66dc77cfe71fa0cedf546859bbdbe236e87b8f9ae944b")
+							.into(),
+						hex!("58b0835abd6923d489c66dc77cfe71fa0cedf546859bbdbe236e87b8f9ae944b")
+							.unchecked_into(),
 					),
 					(
-						get_account_id_from_seed::<sr25519::Public>("Bob"),
-						get_collator_keys_from_seed("Bob"),
+						hex!("b49ff729c44da044ab367fd70ccd1829445ba415fb0775f5bf69ca2254a21b55")
+							.into(),
+						hex!("b49ff729c44da044ab367fd70ccd1829445ba415fb0775f5bf69ca2254a21b55")
+							.unchecked_into(),
 					),
 				],
 				vec![sudo_account_sequester_test()],
@@ -215,7 +221,7 @@ pub fn production_config() -> ChainSpec {
 		// Telemetry
 		None,
 		// Protocol ID
-		Some("template-local"),
+		None,
 		// Fork ID
 		None,
 		// Properties
