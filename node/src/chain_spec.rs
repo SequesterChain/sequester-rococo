@@ -15,7 +15,7 @@ const SEQ_PARA_ID: u32 = 4186;
 // note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
 // 12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a
 pub fn sudo_account_sequester_test() -> AccountId {
-	return AccountId32::from_str(&"5E2JBYi8igU5Ef9QdXhcGtaJkU6B5YKbp7h9ULJbinqndPQZ".to_string())
+	return AccountId32::from_str(&"5CVYHZuTbwtagGot7P4oyEUeV5VJ3gvLYYchqXYF2spRLrsB".to_string())
 		.unwrap()
 }
 
