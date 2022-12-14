@@ -5,19 +5,13 @@ use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
-use sp_runtime::{
-	traits::{IdentifyAccount, Verify},
-	AccountId32,
-};
-use std::str::FromStr;
+use sp_runtime::traits::{IdentifyAccount, Verify};
 
 const SEQ_PARA_ID: u32 = 4186;
 
 // note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
-// 12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a
 pub fn sudo_account_sequester_test() -> AccountId {
-	return AccountId32::from_str(&"5CVYHZuTbwtagGot7P4oyEUeV5VJ3gvLYYchqXYF2spRLrsB".to_string())
-		.unwrap()
+	return hex!("12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a").into()
 }
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -190,7 +184,7 @@ pub fn production_config() -> ChainSpec {
 
 	ChainSpec::from_genesis(
 		// Name
-		"Sequester Rococo",
+		"Setester",
 		// ID
 		"sequester_rococo",
 		ChainType::Live,

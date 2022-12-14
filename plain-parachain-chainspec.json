@@ -36,7 +36,7 @@
       "collatorSelection": {
         "invulnerables": [
           "5E4zWKeJiGs5zkV1KtmEnaf2G7nRvXZJrSRuNhFGqMGDqZ1P",
-          "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+          "5G9Xzj4zQyhoVBs6PZhF79UCujhSAaXyaAjR7gikpDTLkmp8"
         ],
         "candidacyBond": 16000000000,
         "desiredCandidates": 0
@@ -51,10 +51,10 @@
             }
           ],
           [
-            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
+            "5G9Xzj4zQyhoVBs6PZhF79UCujhSAaXyaAjR7gikpDTLkmp8",
+            "5G9Xzj4zQyhoVBs6PZhF79UCujhSAaXyaAjR7gikpDTLkmp8",
             {
-              "aura": "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+              "aura": "5G9Xzj4zQyhoVBs6PZhF79UCujhSAaXyaAjR7gikpDTLkmp8"
             }
           ]
         ]
