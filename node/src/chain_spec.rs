@@ -10,6 +10,8 @@ use sp_runtime::{
 };
 use std::str::FromStr;
 
+const SEQ_PARA_ID: u32 = 4186;
+
 // note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
 // 12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a
 pub fn sudo_account_sequester_test() -> AccountId {
@@ -205,7 +207,7 @@ pub fn production_config() -> ChainSpec {
 					),
 				],
 				vec![sudo_account_sequester_test()],
-				4816.into(),
+				SEQ_PARA_ID.into(),
 			)
 		},
 		// Bootnodes
@@ -221,7 +223,7 @@ pub fn production_config() -> ChainSpec {
 		// Extensions
 		Extensions {
 			relay_chain: "rococo".into(), // You MUST set this to the correct network!
-			para_id: 4816,
+			para_id: SEQ_PARA_ID,
 		},
 	)
 }
