@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-const SEQ_PARA_ID: u32 = 4186;
+const SEQ_PARA_ID: u32 = 4197;
 
 // note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
 pub fn sudo_account_sequester_test() -> AccountId {
