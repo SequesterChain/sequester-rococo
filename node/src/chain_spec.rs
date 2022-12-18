@@ -205,6 +205,14 @@ pub fn production_config() -> ChainSpec {
 						hex!("b49ff729c44da044ab367fd70ccd1829445ba415fb0775f5bf69ca2254a21b55")
 							.unchecked_into(),
 					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						get_collator_keys_from_seed("Alice"),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						get_collator_keys_from_seed("Bob"),
+					),
 				],
 				vec![sudo_account_sequester_test()],
 				SEQ_PARA_ID.into(),
