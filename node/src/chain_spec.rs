@@ -278,5 +278,6 @@ fn testnet_genesis(
 		},
 		treasury: Default::default(),
 		sudo: parachain_template_runtime::SudoConfig { key: Some(sudo_account_sequester_test()) },
+		orml_asset_registry: Default::default(),
 	}
 }
