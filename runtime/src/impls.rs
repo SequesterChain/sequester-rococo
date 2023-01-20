@@ -1,14 +1,17 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	MultiSignature,
 };
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 
 /// Balance of an account.
 pub type Balance = u128;
+
+/// IBalance is the signed version of the Balance for orml tokens
+pub type IBalance = i128;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.

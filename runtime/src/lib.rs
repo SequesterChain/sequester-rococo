@@ -6,9 +6,9 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub mod impls;
 mod weights;
 pub mod xcm_config;
-pub mod impls;
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use smallvec::smallvec;
@@ -16,7 +16,7 @@ use sp_api::impl_runtime_apis;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{AccountIdLookup, BlakeTwo256, Block as BlockT},
+	traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
@@ -39,10 +39,14 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot,
 };
+pub use impls::{
+	asset_registry, AccountId, Balance, CurrencyId, CustomMetadata, IBalance, Signature,
+	XcmMetadata,
+};
+use orml_traits::parameter_type_with_key;
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{traits::Zero, MultiAddress, Perbill, Percent, Permill};
 use xcm_config::{XcmConfig, XcmOriginToTransactDispatchOrigin};
-pub use impls::{AccountId, Balance, Signature, asset_registry, CurrencyId, CustomMetadata, XcmMetadata};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -544,6 +548,47 @@ impl orml_asset_registry::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_type_with_key! {
+	pub ExistentialDeposits: |currency_id: CurrencyId| -> Balance {
+		match currency_id {
+			CurrencyId::Native => ExistentialDeposit::get(),
+			_ => 0,
+		}
+	};
+}
+
+parameter_types! {
+	pub TreasuryAccount: AccountId = TreasuryPalletId::get().into_account_truncating();
+}
+
+// pub struct CurrencyHooks<R>(PhantomData<R>);
+// impl<C: orml_tokens::Config> MutationHooks<AccountId, CurrencyId, Balance> for CurrencyHooks<C> {
+// 	type OnDust = orml_tokens::TransferDust<Runtime, TreasuryAccount>;
+// 	type OnKilledTokenAccount = ();
+// 	type OnNewTokenAccount = ();
+// 	type OnSlash = ();
+// 	type PostDeposit = ();
+// 	type PostTransfer = ();
+// 	type PreDeposit = ();
+// 	type PreTransfer = ();
+// }
+
+impl orml_tokens::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type Amount = IBalance;
+	// type CurrencyHooks = CurrencyHooks<Runtime>;
+	type CurrencyId = CurrencyId;
+	type ExistentialDeposits = ExistentialDeposits;
+	type OnDust = orml_tokens::TransferDust<Runtime, TreasuryAccount>;
+	type OnNewTokenAccount = ();
+	type OnKilledTokenAccount = ();
+	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+	type DustRemovalWhitelist = frame_support::traits::Nothing;
+	type WeightInfo = ();
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -566,6 +611,7 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>} = 10,
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage, Event<T>} = 11,
 		Treasury: pallet_treasury = 13,
+		Tokens: orml_tokens = 14,
 
 		// Collator support. The order of these 4 are important and shall not change.
 		Authorship: pallet_authorship::{Pallet, Call, Storage} = 20,
