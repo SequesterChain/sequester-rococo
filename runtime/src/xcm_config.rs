@@ -1,12 +1,16 @@
 use super::{
 	AccountId, Balance, Balances, Call, CurrencyId, Event, Origin, OrmlAssetRegistry,
-	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, Tokens, WeightToFee, XcmpQueue,
+	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, Tokens, TreasuryAccount, WeightToFee,
+	XcmpQueue,
 };
+use crate::impls::FixedConversionRateProvider;
 use frame_support::{
 	log, match_types, parameter_types,
 	sp_std::marker::PhantomData,
 	traits::{fungibles, Contains, Everything, Nothing},
 };
+use orml_asset_registry::{AssetRegistryTrader, FixedRateAssetRegistryTrader};
+use orml_traits::MultiCurrency;
 use pallet_xcm::XcmPassthrough;
 use polkadot_parachain::primitives::Sibling;
 use polkadot_runtime_common::impls::ToAuthor;
@@ -17,8 +21,8 @@ use xcm_builder::{
 	ConvertedConcreteAssetId, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds,
 	FungiblesAdapter, IsConcrete, LocationInverter, NativeAsset, ParentIsPreset,
 	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
-	UsingComponents,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeRevenue,
+	TakeWeightCredit, UsingComponents,
 };
 use xcm_executor::{
 	traits::{FilterAssetLocation, JustTry, ShouldExecute},
@@ -208,6 +212,21 @@ impl FilterAssetLocation for AllAssets {
 	}
 }
 
+pub struct ToTreasury;
+impl TakeRevenue for ToTreasury {
+	fn take_revenue(revenue: MultiAsset) {
+		use xcm_executor::traits::Convert;
+
+		if let MultiAsset { id: Concrete(location), fun: Fungible(amount) } = revenue {
+			if let Ok(currency_id) =
+				<CurrencyIdConvert as Convert<MultiLocation, CurrencyId>>::convert(location)
+			{
+				let _ = Tokens::deposit(currency_id, &TreasuryAccount::get(), amount);
+			}
+		}
+	}
+}
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type Call = Call;
@@ -220,8 +239,10 @@ impl xcm_executor::Config for XcmConfig {
 	type LocationInverter = LocationInverter<Ancestry>;
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, Call, MaxInstructions>;
-	type Trader =
-		UsingComponents<WeightToFee, RelayLocation, AccountId, Balances, ToAuthor<Runtime>>;
+	type Trader = AssetRegistryTrader<
+		FixedRateAssetRegistryTrader<FixedConversionRateProvider<OrmlAssetRegistry>>,
+		ToTreasury,
+	>;
 	type ResponseHandler = PolkadotXcm;
 	type AssetTrap = PolkadotXcm;
 	type AssetClaims = PolkadotXcm;

@@ -1,4 +1,5 @@
 use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::sp_std::marker::PhantomData;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -6,6 +7,7 @@ use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
 	MultiSignature,
 };
+use xcm::opaque::latest::MultiLocation;
 
 /// Balance of an account.
 pub type Balance = u128;
@@ -168,4 +170,23 @@ pub struct XcmMetadata {
 	/// The fee charged for every second that an XCM message takes to execute.
 	/// When `None`, the `default_per_second` will be used instead.
 	pub fee_per_second: Option<Balance>,
+}
+
+/// Our FixedConversionRateProvider, used to charge XCM-related fees for tokens registered in
+/// the asset registry that were not already handled by native Trader rules.
+pub struct FixedConversionRateProvider<OrmlAssetRegistry>(PhantomData<OrmlAssetRegistry>);
+
+impl<
+		OrmlAssetRegistry: orml_traits::asset_registry::Inspect<
+			AssetId = CurrencyId,
+			Balance = Balance,
+			CustomMetadata = CustomMetadata,
+		>,
+	> orml_traits::FixedConversionRateProvider for FixedConversionRateProvider<OrmlAssetRegistry>
+{
+	fn get_fee_per_second(location: &MultiLocation) -> Option<u128> {
+		let metadata = OrmlAssetRegistry::metadata_by_location(&location)?;
+		// TODO: fix
+		metadata.additional.xcm.fee_per_second.or_else(|| Some(100))
+	}
 }
