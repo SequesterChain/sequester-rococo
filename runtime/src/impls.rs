@@ -131,16 +131,13 @@ pub struct CustomMetadata {
 )]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum CurrencyId {
-	// The Native token, representing AIR in Altair and CFG in Centrifuge.
-	Native,
-
 	/// A foreign asset
 	ForeignAsset(ForeignAssetId),
 }
 
 impl Default for CurrencyId {
 	fn default() -> Self {
-		CurrencyId::Native
+		CurrencyId::ForeignAsset(0)
 	}
 }
 

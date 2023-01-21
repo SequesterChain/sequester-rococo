@@ -551,7 +551,6 @@ impl orml_asset_registry::Config for Runtime {
 parameter_type_with_key! {
 	pub ExistentialDeposits: |currency_id: CurrencyId| -> Balance {
 		match currency_id {
-			CurrencyId::Native => ExistentialDeposit::get(),
 			_ => 0,
 		}
 	};

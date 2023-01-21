@@ -1,25 +1,27 @@
 use super::{
-	AccountId, Balances, Call, Event, Origin, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-	WeightToFee, XcmpQueue,
+	AccountId, Balance, Balances, Call, CurrencyId, Event, Origin, OrmlAssetRegistry,
+	ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, Tokens, WeightToFee, XcmpQueue,
 };
-use core::marker::PhantomData;
 use frame_support::{
 	log, match_types, parameter_types,
-	traits::{Everything, Nothing},
+	sp_std::marker::PhantomData,
+	traits::{fungibles, Contains, Everything, Nothing},
 };
 use pallet_xcm::XcmPassthrough;
 use polkadot_parachain::primitives::Sibling;
 use polkadot_runtime_common::impls::ToAuthor;
+use sp_runtime::traits::Convert;
 use xcm::latest::{prelude::*, Weight as XCMWeight};
 use xcm_builder::{
-	AccountId32Aliases, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom, CurrencyAdapter,
-	EnsureXcmOrigin, FixedWeightBounds, IsConcrete, LocationInverter, NativeAsset, ParentIsPreset,
+	AccountId32Aliases, AllowTopLevelPaidExecutionFrom, AllowUnpaidExecutionFrom,
+	ConvertedConcreteAssetId, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds,
+	FungiblesAdapter, IsConcrete, LocationInverter, NativeAsset, ParentIsPreset,
 	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
 	UsingComponents,
 };
 use xcm_executor::{
-	traits::{FilterAssetLocation, ShouldExecute},
+	traits::{FilterAssetLocation, JustTry, ShouldExecute},
 	XcmExecutor,
 };
 
@@ -28,6 +30,7 @@ parameter_types! {
 	pub const RelayNetwork: NetworkId = NetworkId::Any;
 	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Parachain(ParachainInfo::parachain_id().into()).into();
+	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
 /// Type for specifying how a `MultiLocation` can be converted into an `AccountId`. This is used
@@ -43,18 +46,52 @@ pub type LocationToAccountId = (
 );
 
 /// Means for transacting assets on this chain.
-pub type LocalAssetTransactor = CurrencyAdapter<
+pub type LocalAssetTransactor = FungiblesAdapter<
 	// Use this currency:
-	Balances,
+	Tokens,
 	// Use this currency when it is a fungible asset matching the given location or name:
-	IsConcrete<RelayLocation>,
+	ConvertedConcreteAssetId<CurrencyId, Balance, CurrencyIdConvert, JustTry>,
 	// Do a simple punn to convert an AccountId32 MultiLocation into a native chain account ID:
 	LocationToAccountId,
 	// Our chain's account ID type (we can't get away without mentioning it explicitly):
 	AccountId,
-	// We don't track any teleports.
-	(),
+	// Only allow transactions for assets with total issuance > 0
+	NonZeroIssuance<AccountId, Tokens>,
+	CheckingAccount,
 >;
+
+/// Allow checking in assets that have issuance > 0.
+pub struct NonZeroIssuance<AccountId, Assets>(PhantomData<(AccountId, Assets)>);
+impl<AccountId, Assets> Contains<<Assets as fungibles::Inspect<AccountId>>::AssetId>
+	for NonZeroIssuance<AccountId, Assets>
+where
+	Assets: fungibles::Inspect<AccountId>,
+{
+	fn contains(_id: &<Assets as fungibles::Inspect<AccountId>>::AssetId) -> bool {
+		true
+		// !Assets::total_issuance(*id).is_zero()
+	}
+}
+
+// Converts MultiLocation -> CurrencyId
+// as well as CurrencyId -> MultiLocation
+pub struct CurrencyIdConvert;
+
+impl Convert<CurrencyId, Option<MultiLocation>> for CurrencyIdConvert {
+	fn convert(id: CurrencyId) -> Option<MultiLocation> {
+		match id {
+			CurrencyId::ForeignAsset(_) => OrmlAssetRegistry::multilocation(&id).ok()?,
+		}
+	}
+}
+
+impl xcm_executor::traits::Convert<MultiLocation, CurrencyId> for CurrencyIdConvert {
+	fn convert(location: MultiLocation) -> Result<CurrencyId, MultiLocation> {
+		match location.clone() {
+			_ => OrmlAssetRegistry::location_to_asset_id(location.clone()).ok_or(location),
+		}
+	}
+}
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
 /// ready for dispatching a transaction with Xcm's `Transact`. There is an `OriginKind` which can
