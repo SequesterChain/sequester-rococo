@@ -185,8 +185,9 @@ impl<
 	> orml_traits::FixedConversionRateProvider for FixedConversionRateProvider<OrmlAssetRegistry>
 {
 	fn get_fee_per_second(location: &MultiLocation) -> Option<u128> {
-		let metadata = OrmlAssetRegistry::metadata_by_location(&location)?;
-		// TODO: fix
-		metadata.additional.xcm.fee_per_second.or_else(|| Some(100))
+		Some(0)
+		// let metadata = OrmlAssetRegistry::metadata_by_location(&location)?;
+		// // TODO: fix
+		// metadata.additional.xcm.fee_per_second.or_else(|| Some(0))
 	}
 }
