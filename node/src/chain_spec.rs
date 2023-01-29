@@ -1,10 +1,18 @@
 use cumulus_primitives_core::ParaId;
+use hex_literal::hex;
 use parachain_template_runtime::{AccountId, AuraId, Signature, EXISTENTIAL_DEPOSIT};
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
-use sp_core::{sr25519, Pair, Public};
+use sp_core::{crypto::UncheckedInto, sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+
+const SEQ_PARA_ID: u32 = 4197;
+
+// note: this is the global id from subscan (https://datahighway.subscan.io/tools/format_transform)
+pub fn sudo_account_sequester_test() -> AccountId {
+	return hex!("12f0ead18c238aa5a4bf32c362a164ee139d1b38637492769dfe07c4d5e1406a").into()
+}
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec =
@@ -111,7 +119,7 @@ pub fn development_config() -> ChainSpec {
 		None,
 		Extensions {
 			relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-			para_id: 1000,
+			para_id: 1001,
 		},
 	)
 }
@@ -142,20 +150,7 @@ pub fn local_testnet_config() -> ChainSpec {
 						get_collator_keys_from_seed("Bob"),
 					),
 				],
-				vec![
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					get_account_id_from_seed::<sr25519::Public>("Dave"),
-					get_account_id_from_seed::<sr25519::Public>("Eve"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-				],
+				vec![sudo_account_sequester_test()],
 				1000.into(),
 			)
 		},
@@ -171,8 +166,72 @@ pub fn local_testnet_config() -> ChainSpec {
 		Some(properties),
 		// Extensions
 		Extensions {
-			relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-			para_id: 1000,
+			relay_chain: "rococo".into(), // You MUST set this to the correct network!
+			para_id: 1001,                //TODO: update
+		},
+	)
+}
+
+pub fn production_config() -> ChainSpec {
+	// Give your base currency a unit name and decimal places
+	let mut properties = sc_chain_spec::Properties::new();
+	properties.insert("tokenSymbol".into(), "ROC".into());
+	properties.insert("tokenDecimals".into(), 12.into());
+
+	// This is omitted in statemint chain_spec
+	// https://github.com/paritytech/statemint/blob/master/node/src/chain_spec.rs
+	// properties.insert("ss58Format".into(), 42.into());
+
+	ChainSpec::from_genesis(
+		// Name
+		"Setester",
+		// ID
+		"sequester_rococo",
+		ChainType::Live,
+		move || {
+			testnet_genesis(
+				// initial collators.
+				// 5E4zWKeJiGs5zkV1KtmEnaf2G7nRvXZJrSRuNhFGqMGDqZ1P
+				vec![
+					(
+						hex!("58b0835abd6923d489c66dc77cfe71fa0cedf546859bbdbe236e87b8f9ae944b")
+							.into(),
+						hex!("58b0835abd6923d489c66dc77cfe71fa0cedf546859bbdbe236e87b8f9ae944b")
+							.unchecked_into(),
+					),
+					(
+						hex!("b49ff729c44da044ab367fd70ccd1829445ba415fb0775f5bf69ca2254a21b55")
+							.into(),
+						hex!("b49ff729c44da044ab367fd70ccd1829445ba415fb0775f5bf69ca2254a21b55")
+							.unchecked_into(),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Alice"),
+						get_collator_keys_from_seed("Alice"),
+					),
+					(
+						get_account_id_from_seed::<sr25519::Public>("Bob"),
+						get_collator_keys_from_seed("Bob"),
+					),
+				],
+				vec![sudo_account_sequester_test()],
+				SEQ_PARA_ID.into(),
+			)
+		},
+		// Bootnodes
+		Vec::new(),
+		// Telemetry
+		None,
+		// Protocol ID
+		None,
+		// Fork ID
+		None,
+		// Properties
+		Some(properties),
+		// Extensions
+		Extensions {
+			relay_chain: "rococo".into(), // You MUST set this to the correct network!
+			para_id: SEQ_PARA_ID,
 		},
 	)
 }
@@ -217,5 +276,9 @@ fn testnet_genesis(
 		polkadot_xcm: parachain_template_runtime::PolkadotXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
+		treasury: Default::default(),
+		tokens: Default::default(),
+		sudo: parachain_template_runtime::SudoConfig { key: Some(sudo_account_sequester_test()) },
+		orml_asset_registry: Default::default(),
 	}
 }
