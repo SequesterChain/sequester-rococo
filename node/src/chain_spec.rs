@@ -277,6 +277,8 @@ fn testnet_genesis(
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 		},
 		treasury: Default::default(),
+		tokens: Default::default(),
 		sudo: parachain_template_runtime::SudoConfig { key: Some(sudo_account_sequester_test()) },
+		orml_asset_registry: Default::default(),
 	}
 }
