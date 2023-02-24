@@ -195,6 +195,8 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 pub type Barrier = DenyThenTry<
 	DenyReserveTransferToRelayChain,
 	(
+		// TODO: this is to unblock v1 functionality. We will optimize the
+		// the fee processing structure
 		AllowUnpaidExecutionFrom<Everything>,
 		TakeWeightCredit,
 		AllowTopLevelPaidExecutionFrom<Everything>,
