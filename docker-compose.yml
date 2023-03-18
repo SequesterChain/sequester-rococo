@@ -1,0 +1,24 @@
+version: "3"
+services:
+    collator1:
+      image: sequesterchain/sequester-rococo:rococo_v2@sha256:52b77f0747773584e3ce1bae40dc1e9e00cb92ab4954753f258e3578241a0cd6
+      command: |
+        bash -c "./parachain-template-node
+          --base-path /data
+          --chain raw-parachain-chainspec.json
+          --force-authoring
+          --name rococo-sequester-collator-1
+          --collator
+          --prometheus-external
+          --no-telemetry
+          --enable-offchain-indexing true
+          --port 30333 
+          --rpc-port 9933 
+          --ws-port 9944 
+          --unsafe-ws-external 
+          --unsafe-rpc-external 
+          --rpc-cors all 
+          --sync fast-unsafe
+          -- 
+          --chain rococo
+          --sync fast-unsafe"
