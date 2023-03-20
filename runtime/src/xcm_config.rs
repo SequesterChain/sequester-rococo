@@ -61,6 +61,9 @@ pub type LocalAssetTransactor = FungiblesAdapter<
 >;
 
 /// Allow checking in assets that have issuance > 0.
+/// <HB SBP Milestone 1 Review:
+/// Nothing is being checked here as the contains fn always returns true.
+/// HB SBP>
 pub struct NonZeroIssuance<AccountId, Assets>(PhantomData<(AccountId, Assets)>);
 impl<AccountId, Assets> Contains<<Assets as fungibles::Inspect<AccountId>>::AssetId>
 	for NonZeroIssuance<AccountId, Assets>
@@ -167,20 +170,20 @@ impl ShouldExecute for DenyReserveTransferToRelayChain {
 				InitiateReserveWithdraw {
 					reserve: MultiLocation { parents: 1, interior: Here },
 					..
-				} | DepositReserveAsset { dest: MultiLocation { parents: 1, interior: Here }, .. } |
-					TransferReserveAsset {
+				} | DepositReserveAsset { dest: MultiLocation { parents: 1, interior: Here }, .. }
+					| TransferReserveAsset {
 						dest: MultiLocation { parents: 1, interior: Here },
 						..
 					}
 			)
 		}) {
-			return Err(()) // Deny
+			return Err(()); // Deny
 		}
 
 		// An unexpected reserve transfer has arrived from the Relay Chain. Generally, `IsReserve`
 		// should not allow this, but we just log it here.
-		if matches!(origin, MultiLocation { parents: 1, interior: Here }) &&
-			message.0.iter().any(|inst| matches!(inst, ReserveAssetDeposited { .. }))
+		if matches!(origin, MultiLocation { parents: 1, interior: Here })
+			&& message.0.iter().any(|inst| matches!(inst, ReserveAssetDeposited { .. }))
 		{
 			log::warn!(
 				target: "xcm::barriers",
@@ -197,6 +200,10 @@ pub type Barrier = DenyThenTry<
 	(
 		// TODO: this is to unblock v1 functionality. We will optimize the
 		// the fee processing structure
+
+		/// <HB SBP Milestone 1 Review:
+		/// Noted. This is just a non go for a real production parachain.
+		/// HB SBP>
 		AllowUnpaidExecutionFrom<Everything>,
 		TakeWeightCredit,
 		AllowTopLevelPaidExecutionFrom<Everything>,
@@ -204,6 +211,12 @@ pub type Barrier = DenyThenTry<
 	),
 >;
 
+
+/// <HB SBP Milestone 1 Review:
+/// If the intention is to provide this struct in the IsTeleporter, 
+/// then this struct is implementing the wrong trait since the IsTeleporter expects a ContainsPair trait.
+/// The FilterAssetLocation is the trait used to filter reserves.
+/// HB SBP>
 pub struct AllAssets;
 impl FilterAssetLocation for AllAssets {
 	fn filter_asset_location(_asset: &MultiAsset, _origin: &MultiLocation) -> bool {
@@ -232,7 +245,18 @@ impl xcm_executor::Config for XcmConfig {
 	// How to withdraw and deposit an asset.
 	type AssetTransactor = LocalAssetTransactor;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
+	/// <HB SBP Milestone 1 Review:
+	/// This configuration should be revisited since the barrier is set in a way to deny sending relay chain native token as DOT or KSM.
+	/// But as this parachain will recognize other parachains as a reserve for their own native tokens,
+	/// this type should allow all the native tokens from other paracahins instead of the parent one (DOT/KSM)
+	/// HB SBP>
 	type IsReserve = NativeAsset;
+	/// <HB SBP Milestone 1 Review:
+	/// Comment is saying that teleporting is disabled, but if this parachain becomes a common good parachain, 
+	/// it should allow teleports from the relay chain and become a trusted teleporter
+	/// in the relay chain otherwise it would not be able to to receive the native token of the relay chain.
+	/// (at least if this is going to be the convention for common good parachains)
+	/// HB SBP>
 	type IsTeleporter = AllAssets; // Teleporting is disabled.
 	type LocationInverter = LocationInverter<Ancestry>;
 	type Barrier = Barrier;
